@@ -1,11 +1,9 @@
 import pytest
 import sys
 from unittest.mock import AsyncMock, MagicMock, patch
-
-# We'll use patch to replace the app modules inside the test
 from planner.planner import CodingPlanner
 
-# Define a dummy HiveTask class
+# Define a dummy HiveTask class for the mock
 class DummyHiveTask:
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
@@ -13,6 +11,7 @@ class DummyHiveTask:
 
 @pytest.mark.asyncio
 async def test_planner_plan_success():
+    # Mock the app modules
     with patch.dict('sys.modules', {
         'app': MagicMock(),
         'app.models': MagicMock(),
@@ -22,14 +21,16 @@ async def test_planner_plan_success():
         'app.core': MagicMock(),
         'app.core.config': MagicMock(),
     }):
-        # Import inside the patch context to ensure the patched modules are used
+        # Import inside the patch context
         import sys
         mock_app = sys.modules['app']
         mock_models = mock_app.models
         mock_types = mock_models.types
         mock_litellm = mock_app.services.litellm_service
+        mock_core = sys.modules['app.core']
+        mock_config = mock_core.config
 
-        # Define HiveTaskStatus with required attributes
+        # Define HiveTaskStatus class
         class HiveTaskStatus:
             PENDING = "pending"
             ASSIGNED = "assigned"
@@ -42,16 +43,16 @@ async def test_planner_plan_success():
         mock_types.HiveTask = DummyHiveTask
         mock_types.HiveTaskStatus = HiveTaskStatus
 
-        # Mock the generate_with_messages to return a valid plan
+        # Mock generate_with_messages
         async def mock_generate(messages, config):
             return '{"tasks": [{"id": "task_1", "description": "Write code", "agent_type": "backend-developer", "depends_on": [], "required_skills": ["rest_api"]}], "reasoning": "test"}'
         mock_litellm.generate_with_messages = AsyncMock(side_effect=mock_generate)
 
         # Mock settings.secrets.get
-        mock_core = sys.modules['app.core']
-        mock_core.config.settings = MagicMock()
-        mock_core.config.settings.secrets = MagicMock()
-        mock_core.config.settings.secrets.get.return_value = {
+        mock_settings = MagicMock()
+        mock_config.settings = mock_settings
+        mock_settings.secrets = MagicMock()
+        mock_settings.secrets.get.return_value = {
             "providers": {
                 "openai": {
                     "models": {
@@ -61,7 +62,7 @@ async def test_planner_plan_success():
             }
         }
 
-        # Now create planner and test
+        # Create planner and test
         planner = CodingPlanner()
         tasks = await planner.plan(
             goal_text="Build a REST API",
@@ -93,6 +94,8 @@ async def test_planner_plan_fallback():
         mock_models = mock_app.models
         mock_types = mock_models.types
         mock_litellm = mock_app.services.litellm_service
+        mock_core = sys.modules['app.core']
+        mock_config = mock_core.config
 
         class HiveTaskStatus:
             PENDING = "pending"
@@ -111,10 +114,10 @@ async def test_planner_plan_fallback():
             raise Exception("API error")
         mock_litellm.generate_with_messages = AsyncMock(side_effect=mock_generate_fail)
 
-        mock_core = sys.modules['app.core']
-        mock_core.config.settings = MagicMock()
-        mock_core.config.settings.secrets = MagicMock()
-        mock_core.config.settings.secrets.get.return_value = {
+        mock_settings = MagicMock()
+        mock_config.settings = mock_settings
+        mock_settings.secrets = MagicMock()
+        mock_settings.secrets.get.return_value = {
             "providers": {
                 "openai": {
                     "models": {

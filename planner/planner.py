@@ -7,7 +7,7 @@ from typing import List, Dict, Any, Optional
 
 # Avoid hard dependency on app module – use a mock for testing
 try:
-    from app.models.types import HiveTask, HiteTaskStatus
+    from app.models.types import HiveTask, HiveTaskStatus
     from app.services.litellm_service import generate_with_messages
     from app.core.config import settings
 except ImportError:
