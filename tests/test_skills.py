@@ -8,9 +8,9 @@ async def test_html_builder():
     from skills.html_builder.version_1.code import run
 
     with patch.dict(os.environ, {"INTERNAL_API_KEY": "test", "ORCHESTRATOR_URL": "http://test"}):
-        # Create a mock response for the HTTP call
+        # Create a mock response with an async json method
         mock_response = MagicMock()
-        mock_response.json = MagicMock(return_value={"response": "<html>test</html>"})
+        mock_response.json = AsyncMock(return_value={"response": "<html>test</html>"})
         mock_response.raise_for_status = MagicMock()
 
         # Mock the AsyncClient context manager
@@ -29,7 +29,7 @@ async def test_css_styling():
 
     with patch.dict(os.environ, {"INTERNAL_API_KEY": "test", "ORCHESTRATOR_URL": "http://test"}):
         mock_response = MagicMock()
-        mock_response.json = MagicMock(return_value={"response": "body { color: red; }"})
+        mock_response.json = AsyncMock(return_value={"response": "body { color: red; }"})
         mock_response.raise_for_status = MagicMock()
 
         mock_client = AsyncMock()

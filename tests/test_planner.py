@@ -1,11 +1,15 @@
+# tests/test_planner.py
 import pytest
 import sys
 from unittest.mock import AsyncMock, MagicMock, patch
 
-# Mock the app modules
+# Create mock app modules
 mock_app = MagicMock()
+mock_app.models = MagicMock()
 mock_app.models.types = MagicMock()
+mock_app.services = MagicMock()
 mock_app.services.litellm_service = MagicMock()
+mock_app.core = MagicMock()
 mock_app.core.config = MagicMock()
 sys.modules['app'] = mock_app
 sys.modules['app.models'] = mock_app.models
@@ -15,7 +19,7 @@ sys.modules['app.services.litellm_service'] = mock_app.services.litellm_service
 sys.modules['app.core'] = mock_app.core
 sys.modules['app.core.config'] = mock_app.core.config
 
-# Define dummy HiveTask and HiveTaskStatus
+# Define dummy classes
 class HiveTaskStatus:
     PENDING = "pending"
     ASSIGNED = "assigned"
@@ -29,6 +33,7 @@ class DummyHiveTask:
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
 
+# Assign them to the mocked module
 mock_app.models.types.HiveTask = DummyHiveTask
 mock_app.models.types.HiveTaskStatus = HiveTaskStatus
 
@@ -51,6 +56,7 @@ mock_app.core.config.settings.secrets.get.return_value = {
     }
 }
 
+# Now import the planner
 from planner.planner import CodingPlanner
 
 
