@@ -26,7 +26,7 @@ HTML:"""
             timeout=30
         )
         resp.raise_for_status()
-        data = resp.json()
+        data = await resp.json()  # <-- FIXED: added await
         html = data.get("response", "")
 
     return {"html": html}
