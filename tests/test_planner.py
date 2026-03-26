@@ -1,4 +1,4 @@
-import pytest
+iimport pytest
 import sys
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -25,12 +25,11 @@ class DummyHiveTask:
 mock_app.models.types.HiveTask = DummyHiveTask
 mock_app.models.types.HiveTaskStatus.PENDING = "pending"
 
-# Mock generate_with_messages
-async def mock_generate_with_messages(messages, config):
-    # Simulate a valid JSON response
+# Mock generate_with_messages to return a valid response for success test
+async def mock_generate_success(messages, config):
     return '{"tasks": [{"id": "task_1", "description": "Write code", "agent_type": "backend-developer", "depends_on": [], "required_skills": ["rest_api"]}], "reasoning": "test"}'
 
-mock_app.services.litellm_service.generate_with_messages = mock_generate_with_messages
+mock_app.services.litellm_service.generate_with_messages = mock_generate_success
 
 # Mock settings.secrets.get
 mock_app.core.config.settings = MagicMock()

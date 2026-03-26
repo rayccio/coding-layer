@@ -2,7 +2,7 @@ import re
 import json
 import uuid
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional
 
 # Avoid hard dependency on app module – use a mock for testing
@@ -168,7 +168,7 @@ Do not include any other text outside the JSON.
         # Convert to HiveTask objects
         tasks = []
         task_id_map = {}
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)  # Use timezone-aware UTC
         for t in tasks_dict:
             real_id = f"t-{uuid.uuid4().hex[:8]}"
             task_id_map[t["id"]] = real_id

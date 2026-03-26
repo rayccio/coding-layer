@@ -1,17 +1,14 @@
 import pytest
 import os
-from unittest.mock import patch, AsyncMock, MagicMock
-
-# Import skill modules dynamically – they will be loaded when we run tests
-# We'll just test one as an example
+from unittest.mock import AsyncMock, MagicMock, patch
 
 
 @pytest.mark.asyncio
 async def test_html_builder():
     from skills.html_builder.version_1.code import run
 
-    # Mock environment and HTTP client
     with patch.dict(os.environ, {"INTERNAL_API_KEY": "test", "ORCHESTRATOR_URL": "http://test"}):
+        # Create a mock response that is a coroutine and returns a mock with json method
         mock_response = AsyncMock()
         mock_response.json = AsyncMock(return_value={"response": "<html>test</html>"})
         mock_response.raise_for_status = MagicMock()
@@ -40,4 +37,4 @@ async def test_css_styling():
         with patch('httpx.AsyncClient', return_value=mock_client):
             result = await run({"description": "make text red"}, {})
             assert "css" in result
-            assert "color: red" in result["css"]
+            assert result["css"] == "body { color: red; }"

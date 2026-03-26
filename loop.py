@@ -3,6 +3,7 @@ import json
 import re
 import logging
 from typing import Dict, Any, Optional
+from datetime import datetime, timezone
 
 # Avoid hard dependency on worker module – use a local base class for testing
 try:
@@ -21,6 +22,7 @@ from worker.constants import (
 )
 
 logger = logging.getLogger(__name__)
+
 
 class CodingLoopHandler(BaseLoopHandler):
     """Custom loop handler for coding tasks with a review step."""
