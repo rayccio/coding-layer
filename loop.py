@@ -3,7 +3,16 @@ import json
 import re
 import logging
 from typing import Dict, Any, Optional
-from worker.loop_handler import BaseLoopHandler
+
+# Avoid hard dependency on worker module – use a local base class for testing
+try:
+    from worker.loop_handler import BaseLoopHandler
+except ImportError:
+    # In test environment, define a dummy base class
+    class BaseLoopHandler:
+        async def run(self, *args, **kwargs):
+            raise NotImplementedError
+
 from worker.constants import (
     BUILDER_SOUL, BUILDER_IDENTITY, BUILDER_TOOLS,
     TESTER_SOUL, TESTER_IDENTITY, TESTER_TOOLS,

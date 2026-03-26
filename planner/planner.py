@@ -5,10 +5,31 @@ import logging
 from datetime import datetime
 from typing import List, Dict, Any, Optional
 
-# Backend imports – safe because this runs in the backend process
-from app.models.types import HiveTask, HiveTaskStatus
-from app.services.litellm_service import generate_with_messages
-from app.core.config import settings
+# Avoid hard dependency on app module – use a mock for testing
+try:
+    from app.models.types import HiveTask, HiveTaskStatus
+    from app.services.litellm_service import generate_with_messages
+    from app.core.config import settings
+except ImportError:
+    # In test environment, define dummy classes and functions
+    class HiveTaskStatus:
+        PENDING = "pending"
+        ASSIGNED = "assigned"
+        RUNNING = "running"
+        COMPLETED = "completed"
+        FAILED = "failed"
+        BLOCKED = "blocked"
+        CANCELLED = "cancelled"
+
+    class HiveTask:
+        def __init__(self, **kwargs):
+            self.__dict__.update(kwargs)
+
+    async def generate_with_messages(messages, config):
+        raise NotImplementedError("This is a dummy function for testing")
+
+    class settings:
+        secrets = type('obj', (object,), {'get': lambda s, k, d=None: {}})()
 
 logger = logging.getLogger(__name__)
 

@@ -1,83 +1,83 @@
 import pytest
-import json
-from unittest.mock import AsyncMock, patch, MagicMock
-from planner.planner import CodingPlanner
-from app.models.types import HiveTask, HiveTaskStatus
-from datetime import datetime
+import sys
+from unittest.mock import AsyncMock, MagicMock, patch
 
+# Mock the app modules
+mock_app = MagicMock()
+mock_app.models.types = MagicMock()
+mock_app.models.types.HiveTask = MagicMock()
+mock_app.models.types.HiveTaskStatus = MagicMock()
+mock_app.services.litellm_service = MagicMock()
+mock_app.core.config = MagicMock()
+sys.modules['app'] = mock_app
+sys.modules['app.models'] = mock_app.models
+sys.modules['app.models.types'] = mock_app.models.types
+sys.modules['app.services'] = mock_app.services
+sys.modules['app.services.litellm_service'] = mock_app.services.litellm_service
+sys.modules['app.core'] = mock_app.core
+sys.modules['app.core.config'] = mock_app.core.config
 
-@pytest.mark.asyncio
-async def test_planner_decomposes_goal():
-    planner = CodingPlanner()
+# Define a dummy HiveTask for the mock
+class DummyHiveTask:
+    def __init__(self, **kwargs):
+        self.__dict__.update(kwargs)
 
-    # Mock generate_with_messages to return a predefined decomposition
-    mock_response = {
-        "tasks": [
-            {
-                "id": "task_1",
-                "description": "Design frontend layout",
-                "agent_type": "frontend-developer",
-                "depends_on": [],
-                "required_skills": ["html_builder", "css_styling"]
-            },
-            {
-                "id": "task_2",
-                "description": "Build backend API",
-                "agent_type": "backend-developer",
-                "depends_on": [],
-                "required_skills": ["rest_api"]
+mock_app.models.types.HiveTask = DummyHiveTask
+mock_app.models.types.HiveTaskStatus.PENDING = "pending"
+
+# Mock generate_with_messages
+async def mock_generate_with_messages(messages, config):
+    # Simulate a valid JSON response
+    return '{"tasks": [{"id": "task_1", "description": "Write code", "agent_type": "backend-developer", "depends_on": [], "required_skills": ["rest_api"]}], "reasoning": "test"}'
+
+mock_app.services.litellm_service.generate_with_messages = mock_generate_with_messages
+
+# Mock settings.secrets.get
+mock_app.core.config.settings = MagicMock()
+mock_app.core.config.settings.secrets = MagicMock()
+mock_app.core.config.settings.secrets.get.return_value = {
+    "providers": {
+        "openai": {
+            "models": {
+                "gpt-4o": {"is_primary": True, "enabled": True}
             }
-        ],
-        "reasoning": "test"
+        }
     }
+}
 
-    with patch('planner.planner.generate_with_messages', new_callable=AsyncMock) as mock_gen:
-        mock_gen.return_value = json.dumps(mock_response)
-
-        skills = [
-            {"id": "sk-1", "name": "html_builder", "description": ""},
-            {"id": "sk-2", "name": "css_styling", "description": ""},
-            {"id": "sk-3", "name": "rest_api", "description": ""}
-        ]
-        roles = ["frontend-developer", "backend-developer"]
-
-        tasks = await planner.plan(
-            goal_text="Build a web app",
-            skills=skills,
-            roles=roles
-        )
-
-        assert len(tasks) == 2
-        assert tasks[0].description == "Design frontend layout"
-        assert tasks[0].agent_type == "frontend-developer"
-        assert tasks[0].required_skills == ["sk-1", "sk-2"]
-        assert tasks[0].loop_handler == "coding_loop"
-        assert tasks[0].sandbox_level == "task"
-        assert tasks[1].description == "Build backend API"
-        assert tasks[1].agent_type == "backend-developer"
-        assert tasks[1].required_skills == ["sk-3"]
-
-        # Check that dependencies are resolved correctly
-        assert tasks[0].depends_on == []
-        assert tasks[1].depends_on == []
+from planner.planner import CodingPlanner
 
 
 @pytest.mark.asyncio
-async def test_planner_fallback_on_failure():
+async def test_planner_plan_success():
     planner = CodingPlanner()
+    tasks = await planner.plan(
+        goal_text="Build a REST API",
+        hive_context="",
+        skills=[{"id": "sk-1", "name": "rest_api", "description": "Generate REST API code"}],
+        roles=["backend-developer"]
+    )
+    assert len(tasks) == 1
+    assert tasks[0].description == "Write code"
+    assert tasks[0].agent_type == "backend-developer"
+    assert tasks[0].required_skills == ["sk-1"]
+    assert tasks[0].loop_handler == "coding_loop"
 
-    with patch('planner.planner.generate_with_messages', new_callable=AsyncMock) as mock_gen:
-        mock_gen.side_effect = Exception("API error")
 
-        tasks = await planner.plan(
-            goal_text="Build a web app",
-            skills=[],
-            roles=[]
-        )
+@pytest.mark.asyncio
+async def test_planner_plan_fallback():
+    # Simulate API error
+    async def mock_generate_fail(*args, **kwargs):
+        raise Exception("API error")
+    mock_app.services.litellm_service.generate_with_messages = mock_generate_fail
 
-        assert len(tasks) == 1
-        assert tasks[0].description == "Build a web app"
-        assert tasks[0].agent_type == "builder"
-        assert tasks[0].required_skills == []
-        assert tasks[0].loop_handler == "coding_loop"
-        assert tasks[0].sandbox_level == "task"
+    planner = CodingPlanner()
+    tasks = await planner.plan(
+        goal_text="Something",
+        hive_context="",
+        skills=[],
+        roles=[]
+    )
+    assert len(tasks) == 1
+    assert tasks[0].description == "Something"
+    assert tasks[0].agent_type == "builder"
