@@ -7,7 +7,7 @@ from typing import List, Dict, Any, Optional
 
 # Avoid hard dependency on app module – use a mock for testing
 try:
-    from app.models.types import HiveTask, HiveTaskStatus
+    from app.models.types import HiveTask, HiteTaskStatus
     from app.services.litellm_service import generate_with_messages
     from app.core.config import settings
 except ImportError:
@@ -143,7 +143,7 @@ Do not include any other text outside the JSON.
                 raise ValueError("No tasks in planner response")
         except Exception as e:
             logger.error(f"Planning failed: {e}")
-            # Fallback: single generic task
+            # Fallback: single generic task using original goal text
             tasks_dict = [{
                 "id": "task_1",
                 "description": goal_text,
@@ -168,7 +168,7 @@ Do not include any other text outside the JSON.
         # Convert to HiveTask objects
         tasks = []
         task_id_map = {}
-        now = datetime.now(timezone.utc)  # Use timezone-aware UTC
+        now = datetime.now(timezone.utc)
         for t in tasks_dict:
             real_id = f"t-{uuid.uuid4().hex[:8]}"
             task_id_map[t["id"]] = real_id

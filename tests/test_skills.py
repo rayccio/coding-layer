@@ -8,9 +8,9 @@ async def test_html_builder():
     from skills.html_builder.version_1.code import run
 
     with patch.dict(os.environ, {"INTERNAL_API_KEY": "test", "ORCHESTRATOR_URL": "http://test"}):
-        # Create a mock response that is a coroutine and returns a mock with json method
-        mock_response = AsyncMock()
-        mock_response.json = AsyncMock(return_value={"response": "<html>test</html>"})
+        # Create a mock response that behaves like a real httpx.Response
+        mock_response = MagicMock()
+        mock_response.json = MagicMock(return_value={"response": "<html>test</html>"})
         mock_response.raise_for_status = MagicMock()
 
         mock_client = AsyncMock()
@@ -27,8 +27,8 @@ async def test_css_styling():
     from skills.css_styling.version_1.code import run
 
     with patch.dict(os.environ, {"INTERNAL_API_KEY": "test", "ORCHESTRATOR_URL": "http://test"}):
-        mock_response = AsyncMock()
-        mock_response.json = AsyncMock(return_value={"response": "body { color: red; }"})
+        mock_response = MagicMock()
+        mock_response.json = MagicMock(return_value={"response": "body { color: red; }"})
         mock_response.raise_for_status = MagicMock()
 
         mock_client = AsyncMock()
