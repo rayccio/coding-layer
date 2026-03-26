@@ -5,8 +5,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 # Mock the app modules
 mock_app = MagicMock()
 mock_app.models.types = MagicMock()
-mock_app.models.types.HiveTask = MagicMock()
-mock_app.models.types.HiveTaskStatus = MagicMock()
 mock_app.services.litellm_service = MagicMock()
 mock_app.core.config = MagicMock()
 sys.modules['app'] = mock_app
@@ -17,13 +15,22 @@ sys.modules['app.services.litellm_service'] = mock_app.services.litellm_service
 sys.modules['app.core'] = mock_app.core
 sys.modules['app.core.config'] = mock_app.core.config
 
-# Define a dummy HiveTask for the mock
+# Define dummy HiveTask and HiveTaskStatus
+class HiveTaskStatus:
+    PENDING = "pending"
+    ASSIGNED = "assigned"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    BLOCKED = "blocked"
+    CANCELLED = "cancelled"
+
 class DummyHiveTask:
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
 
 mock_app.models.types.HiveTask = DummyHiveTask
-mock_app.models.types.HiveTaskStatus.PENDING = "pending"
+mock_app.models.types.HiveTaskStatus = HiveTaskStatus
 
 # Mock generate_with_messages to return a valid response for success test
 async def mock_generate_success(messages, config):

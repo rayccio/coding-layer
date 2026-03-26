@@ -8,11 +8,12 @@ async def test_html_builder():
     from skills.html_builder.version_1.code import run
 
     with patch.dict(os.environ, {"INTERNAL_API_KEY": "test", "ORCHESTRATOR_URL": "http://test"}):
-        # Create a mock response that behaves like a real httpx.Response
+        # Create a mock response for the HTTP call
         mock_response = MagicMock()
         mock_response.json = MagicMock(return_value={"response": "<html>test</html>"})
         mock_response.raise_for_status = MagicMock()
 
+        # Mock the AsyncClient context manager
         mock_client = AsyncMock()
         mock_client.post = AsyncMock(return_value=mock_response)
 
